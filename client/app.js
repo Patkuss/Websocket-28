@@ -5,49 +5,62 @@ const addMessageForm = document.getElementById('add-messages-form');
 const userNameInput = document.getElementById('username');
 const messageContentInput = document.getElementById('message-content');
 
+const socket = io();
+
+socket.on('message', event => addMessage(event.author, event.content));
+socket.on('join', name => addMessage('Chat Bot', `<i><b>${name}</b> has joined the conversation!</i>`));
+socket.on('leave', name => addMessage('Chat Bot', `<i><b>${name}</b> has left the conversation!</i>`));
+
 let userName = '';
 
-loginForm.addEventListener('submit', event => {
+loginForm.addEventListener('submit', function(event){
     login(event);
-});
+  });
 
-const login = event => {
-  event.preventDefault();
+login = (event) => {
+  event.preventDefault()
 
-  if (userNameInput.value === '') {
+  if(!userNameInput.value){
+    event.preventDefault();
     alert('Enter your name');
-  } else {
+  } else{
     userName = userNameInput.value;
+    socket.emit('join',  userName )
     loginForm.classList.remove('show');
     messagesSection.classList.add('show');
-  }
+  };
 };
 
-const addMessage = (author, content) => {
+function addMessage(author, content) {
   const message = document.createElement('li');
 
   message.classList.add('message');
   message.classList.add('message--received');
 
-  if (author === userName) message.classList.add('message--self');
+  if(author === userName) message.classList.add('message--self');
   message.innerHTML = `
-      <h3 class="message__author">${userName === author ? 'You' : author}</h3>
-      <div class="message__content">${content}</div>
-    `;
+    <h3 class="message__author">${userName === author ? 'You' : author }</h3>
+    <div class="message__content">${content}</div>
+  `;
   messagesList.appendChild(message);
-};
+}
 
-const sendMessage = event => {
+function sendMessage(event) {
   event.preventDefault();
 
-  if (messageContentInput.value === '') {
+  let messageContent = messageContentInput.value;
+
+  if(!messageContent.length) {
     alert('Enter your message');
   } else {
-    addMessage(userName, messageContentInput.value);
+    addMessage(userName, messageContent);
     messageContentInput.value = '';
-  }
+    socket.emit('message', { author: userName, content: messageContent })
+  };
 };
 
-addMessageForm.addEventListener('submit', event => {
+addMessageForm.addEventListener('submit', function(event){
+  event.preventDefault();
+
   sendMessage(event);
 });
